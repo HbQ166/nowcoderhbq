@@ -1,11 +1,16 @@
 package com.nowcoder.community.controller;
 
 import com.nowcoder.community.annotation.LoginRquired;
+import com.nowcoder.community.entity.Comment;
+import com.nowcoder.community.entity.DiscussPost;
+import com.nowcoder.community.entity.Page;
 import com.nowcoder.community.entity.User;
-import com.nowcoder.community.service.UserService;
+import com.nowcoder.community.service.*;
 import com.nowcoder.community.util.CommunityUtil;
 import com.nowcoder.community.util.CookieUtil;
 import com.nowcoder.community.util.HostHolder;
+import com.qiniu.util.Auth;
+import com.qiniu.util.StringMap;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +21,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
@@ -24,10 +30,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/user")
-public class UserController {
+public class UserController implements CommunityConstant {
 
     private static Logger logger= LoggerFactory.getLogger(UserController.class);
 
@@ -41,17 +51,68 @@ public class UserController {
     private String contextPath;
 
     @Autowired
+    private FollowService followService;
+    @Autowired
     private UserService userService;
 
     @Autowired
+    private DiscussPostService discussPostService;
+
+    @Autowired
     private HostHolder hostHolder;
+    @Autowired
+    private LikeService likeService;
+
+    @Autowired
+    private CommentService commentService;
+
+    @Value("${qiniu.key.access}")
+    private String accessKey;
+
+    @Value("${qiniu.key.secret}")
+    private String secretKey;
+
+    @Value("${qiniu.bucket.header.name}")
+    private String headerBucketName;
+
+    @Value("${qiniu.bucket.header.url}")
+    private String headerBucketUrl;
+
     @LoginRquired
     @RequestMapping(path="/setting",method = RequestMethod.GET)
-    public String getSettingPage(){
+    public String getSettingPage(Model model){
+        //上传文件名称
+        String fileName=CommunityUtil.generateUUID();
+        //设置响应信息
+        StringMap policy=new StringMap();
+        policy.put("returnBody",CommunityUtil.getJSONString(0));
+        //生成上传凭证
+        Auth auth=Auth.create(accessKey,secretKey);
+        String uploadToken=auth.uploadToken(headerBucketName,fileName,3600,policy);
+
+        model.addAttribute("uploadToken",uploadToken);
+        model.addAttribute("fileName",fileName);
         return "/site/setting";
     }
-    @LoginRquired
+
+    //更新头像路径
+    @RequestMapping(path="/header/url",method = RequestMethod.POST)
+    @ResponseBody
+    public String uploadHeaderUrl(String fileName){
+        if(StringUtils.isBlank(fileName)){
+            return CommunityUtil.getJSONString(1,"文件名不能为空！");
+        }
+
+        String url=headerBucketUrl+"/"+fileName;
+        userService.updateHeader(hostHolder.getUser().getId(),url);
+
+        return CommunityUtil.getJSONString(0);
+
+    }
+
+    //废用
     @RequestMapping(path="/upload",method = RequestMethod.POST)
+    @LoginRquired
     public String uploadHeader(MultipartFile headerImage, Model model){
         if(headerImage==null){
             model.addAttribute("error","您还没有选择图片");
@@ -81,7 +142,9 @@ public class UserController {
         return "redirect:/index";
 
     }
+    //废用
     @RequestMapping(path="/header/{fileName}" ,method = RequestMethod.GET)
+    @LoginRquired
     public void getHeader(@PathVariable("fileName") String fileName, HttpServletResponse response){
         //服务器存放路径
         fileName=uploadPath+"/"+fileName;
@@ -104,6 +167,7 @@ public class UserController {
 
     }
     @RequestMapping(path="/upload/password",method = RequestMethod.POST)
+    @LoginRquired
     public String updatePassword(String password, String newPassword, Model model, HttpServletRequest request){
         User user=hostHolder.getUser();
         //判断空值
@@ -126,6 +190,85 @@ public class UserController {
         String ticket= CookieUtil.getValue(request,"ticket");
         userService.logout(ticket);
         return "redirect:/login";
+
+    }
+    //个人主页
+    @RequestMapping(path="/profile/{userId}",method=RequestMethod.GET)
+    public String getProfilePage(@PathVariable("userId") int userId,Model model){
+        User user=userService.findById(userId);
+        if(user==null){
+            throw new RuntimeException("该用户不存在");
+        }
+        //用户
+        model.addAttribute("user",user);
+        //点赞数量
+        int likeCount=likeService.findUserLikeCount(userId);
+        model.addAttribute("likeCount",likeCount);
+        //关注数量
+        long followeeCount=followService.findFolloweeCount(userId,ENTITY_TYPE_USER);
+        model.addAttribute("followeeCount",followeeCount);
+        //粉丝数量
+        long followerCount=followService.findFollowerCount(ENTITY_TYPE_USER,userId);
+        model.addAttribute("followerCount",followerCount);
+        //是否已关注
+        boolean hasFollowed=false;
+        if(hostHolder.getUser()!=null){
+            hasFollowed=followService.hasFollowed(hostHolder.getUser().getId(),ENTITY_TYPE_USER,userId);
+        }
+        model.addAttribute("hasFollowed",hasFollowed);
+        return "/site/profile";
+    }
+    @RequestMapping(path="/profile/{userId}/discussPosts",method = RequestMethod.GET)
+    public String getProfilePosts(@PathVariable("userId") int userId, Model model, Page page){
+        page.setRows(discussPostService.findDiscussPostRows(userId));
+        page.setPath("/user/profile/"+userId+"/discussPosts");
+        page.setLimit(5);
+
+        List<DiscussPost> list=discussPostService.findDiscussPosts(userId,page.getOffset(),page.getLimit(),0);
+        List<Map<String,Object>> discussPost=new ArrayList<>();
+        if(list!=null){
+            for(DiscussPost post:list){
+                Map<String,Object> map=new HashMap<>();
+                map.put("post",post);
+                map.put("likeCount",likeService.findEntityLikeCount(ENTITY_TYPE_POST, post.getId()));
+                map.put("createTime",post.getCreateTime());
+                discussPost.add(map);
+            }
+        }
+        model.addAttribute("discussPost",discussPost);
+        model.addAttribute("discussPostCount",discussPostService.findDiscussPostRows(userId));
+        model.addAttribute("userId",userId);
+        return "/site/my-post";
+    }
+    @RequestMapping(path="/profile/{userId}/reply",method = RequestMethod.GET)
+    public String getProfileComments(@PathVariable("userId") int userId, Model model, Page page){
+        page.setRows(commentService.findCommentCountByUserId(userId));
+        page.setPath("/user/profile/"+userId+"/reply");
+        page.setLimit(5);
+
+        List<Comment> list=commentService.findCommentsByUserId(userId,page.getOffset(),page.getLimit());
+        List<Map<String,Object>> comments=new ArrayList<>();
+        if(list!=null){
+            for(Comment comment:list){
+                Map<String,Object> map=new HashMap<>();
+                if(comment.getEntityType()==ENTITY_TYPE_COMMENT){
+                    Comment entityComment=commentService.findCommentById(comment.getEntityId());
+                    DiscussPost post=discussPostService.findDisscussPost(entityComment.getEntityId());
+                    map.put("postId",entityComment.getEntityId());
+                    map.put("title",post.getTitle());
+                }else {
+                    DiscussPost post=discussPostService.findDisscussPost(comment.getEntityId());
+                    map.put("postId",post.getId());
+                    map.put("title",post.getTitle());
+                }
+                map.put("comment",comment);
+                comments.add(map);
+            }
+        }
+        model.addAttribute("comment",comments);
+        model.addAttribute("count",commentService.findCommentCountByUserId(userId));
+        model.addAttribute("userId",userId);
+        return "/site/my-reply";
 
     }
 

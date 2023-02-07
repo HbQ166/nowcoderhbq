@@ -2,14 +2,18 @@ package com.nowcoder.community;
 
 import com.nowcoder.community.dao.DiscussPostMapper;
 import com.nowcoder.community.dao.LoginTicketMapper;
+import com.nowcoder.community.dao.MessageMapper;
 import com.nowcoder.community.dao.UserMapper;
 import com.nowcoder.community.entity.DiscussPost;
 import com.nowcoder.community.entity.LoginTicket;
+import com.nowcoder.community.entity.Message;
 import com.nowcoder.community.entity.User;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Date;
 import java.util.List;
@@ -17,7 +21,10 @@ import java.util.List;
 
 @SpringBootTest
 @ContextConfiguration(classes=CommunityApplication.class)
+@RunWith(SpringRunner.class)
 public class MapperTests {
+    @Autowired
+    private MessageMapper messageMapper;
     @Autowired
     private LoginTicketMapper loginTicketMapper;
     @Autowired
@@ -57,7 +64,7 @@ public class MapperTests {
 
     @Test
     public void testDiscussPosts() {
-        List<DiscussPost> list = dpMapper.selectDiscussPosts(0, 0, 10);
+        List<DiscussPost> list = dpMapper.selectDiscussPosts(0, 0, 10,0);
         for (DiscussPost post : list) {
             System.out.println(post);
 
@@ -77,6 +84,23 @@ public class MapperTests {
         loginTicketMapper.updateStatus("abc",0);
         System.out.println(loginTicketMapper.selectByTicket("abc"));
 
+    }
+    @Test
+    public void selectTestMessage(){
+        List<Message> lm=messageMapper.selectConversations(111,0,20);
+        for(Message m:lm){
+            System.out.println(m);
+        }
+        int count1=messageMapper.selectConversationCount(111);
+        System.out.println(count1);
+        List<Message> lm2=messageMapper.selectLetters("111_112",0,20);
+        for(Message m:lm2){
+            System.out.println(m);
+        }
+        int count2=messageMapper.selectLetterCount("111_112");
+        System.out.println(count2);
+        count2=messageMapper.selectLetterUnreadCount(131,"111_131");
+        System.out.println(count2);
     }
 
 }

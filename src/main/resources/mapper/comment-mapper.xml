@@ -6,6 +6,9 @@
     <sql id="selectFields">
         id,user_id,entity_type,entity_id,target_id,content,status,create_time
     </sql>
+    <sql id="insertFields">
+        user_id,entity_type,entity_id,target_id,content,status,create_time
+    </sql>
     <select id="selectCommentsByEntity" resultType="Comment">
         select<include refid="selectFields"></include>
         from comment
@@ -24,5 +27,32 @@
         and entity_id=#{entityId}
 
     </select>
+
+    <insert id="insertComment" keyProperty="id" parameterType="Comment">
+     insert into comment(<include refid="insertFields"></include>)
+        values(#{userId},#{entityType},#{entityId},#{targetId},#{content},#{status},#{createTime})
+    </insert>
+    <select id="selectCommentById" resultType="Comment">
+        select<include refid="selectFields"></include>
+        from comment
+        where id=#{id}
+    </select>
+    <select id="selectCommentsByUserId" resultType="Comment">
+        select<include refid="selectFields"></include>
+        from comment
+        where user_id=#{userId}
+        and status=0
+        order by create_time asc
+        limit #{offset},#{limit}
+    </select>
+    <select id="selectCountByUserId" resultType="int">
+        select count(id)
+        from comment
+        where status=0
+        and user_id=#{userId}
+
+
+    </select>
+
 
 </mapper>
