@@ -109,7 +109,7 @@ public class EventConsumer implements CommunityConstant {
             logger.error("消息格式错误！");
             return;
         }
-        DiscussPost post=discussPostService.findDisscussPost(event.getEntityId());
+        DiscussPost post=discussPostService.findDiscussPost(event.getEntityId());
         elasticsearchService.saveDiscussPost(post);
 
     }

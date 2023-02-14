@@ -9,6 +9,7 @@ import com.nowcoder.community.service.*;
 import com.nowcoder.community.util.CommunityUtil;
 import com.nowcoder.community.util.CookieUtil;
 import com.nowcoder.community.util.HostHolder;
+import com.nowcoder.community.util.RedisKeyUtil;
 import com.qiniu.util.Auth;
 import com.qiniu.util.StringMap;
 import org.apache.commons.lang3.StringUtils;
@@ -16,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,6 +36,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Controller
 @RequestMapping("/user")
@@ -66,6 +69,9 @@ public class UserController implements CommunityConstant {
     @Autowired
     private CommentService commentService;
 
+    @Autowired
+    private ForgetService forgetService;
+
     @Value("${qiniu.key.access}")
     private String accessKey;
 
@@ -77,6 +83,11 @@ public class UserController implements CommunityConstant {
 
     @Value("${qiniu.bucket.header.url}")
     private String headerBucketUrl;
+
+
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @LoginRquired
     @RequestMapping(path="/setting",method = RequestMethod.GET)
@@ -253,11 +264,11 @@ public class UserController implements CommunityConstant {
                 Map<String,Object> map=new HashMap<>();
                 if(comment.getEntityType()==ENTITY_TYPE_COMMENT){
                     Comment entityComment=commentService.findCommentById(comment.getEntityId());
-                    DiscussPost post=discussPostService.findDisscussPost(entityComment.getEntityId());
+                    DiscussPost post=discussPostService.findDiscussPost(entityComment.getEntityId());
                     map.put("postId",entityComment.getEntityId());
                     map.put("title",post.getTitle());
                 }else {
-                    DiscussPost post=discussPostService.findDisscussPost(comment.getEntityId());
+                    DiscussPost post=discussPostService.findDiscussPost(comment.getEntityId());
                     map.put("postId",post.getId());
                     map.put("title",post.getTitle());
                 }
@@ -269,7 +280,47 @@ public class UserController implements CommunityConstant {
         model.addAttribute("count",commentService.findCommentCountByUserId(userId));
         model.addAttribute("userId",userId);
         return "/site/my-reply";
+    }
+    @RequestMapping(path="/forget", method=RequestMethod.GET)
+    public String getForgetPage(){
+        return "/site/forget";
+    }
+    @RequestMapping(path="/forget/send", method=RequestMethod.POST)
+    @ResponseBody
+    public String sendCode(String email){
 
+
+        Map<String,String> map=forgetService.sendCode(email);
+
+        if(!StringUtils.isBlank(map.get("msg"))){
+            return CommunityUtil.getJSONString(1,map.get("msg"));
+        }
+        if(StringUtils.isBlank(map.get("code"))){
+            return CommunityUtil.getJSONString(1,"验证码生成失败");
+        }
+        String redisKey=RedisKeyUtil.getForgetKey(email);
+        redisTemplate.expire(redisKey,60, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(redisKey,map.get("code"));
+        return CommunityUtil.getJSONString(0);
     }
 
+    @RequestMapping(path="/forget", method=RequestMethod.POST)
+    public String updateForgetPassword(String email,String code,String password,Model model){
+        if(email==null){
+            model.addAttribute("emailMsg","邮箱不能为空");
+            return "/site/forget";
+        }
+        if(code==null){
+            model.addAttribute("codeMsg","验证码不能为空");
+            return "/site/forget";
+        }
+        String redisKey=RedisKeyUtil.getForgetKey(email);
+        if(code.equals(redisTemplate.opsForValue().get(redisKey))){
+            forgetService.updatePassword(email,password);
+            return "redirect:/login";
+        }else{
+            model.addAttribute("codeMsg","验证码不正确");
+            return "/site/forget";
+        }
+    }
 }

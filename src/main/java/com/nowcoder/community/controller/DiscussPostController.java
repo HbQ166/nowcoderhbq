@@ -71,7 +71,7 @@ public class DiscussPostController implements CommunityConstant {
     @RequestMapping(path="/detail/{discussPostId}",method = RequestMethod.GET)
     public String getDiscussPost(@PathVariable("discussPostId") int discussPostId, Model model, Page page){
         //帖子
-        DiscussPost post=discussPostService.findDisscussPost(discussPostId);
+        DiscussPost post=discussPostService.findDiscussPost(discussPostId);
         model.addAttribute("post",post);
         //用户
         User user=userService.findById(post.getUserId());

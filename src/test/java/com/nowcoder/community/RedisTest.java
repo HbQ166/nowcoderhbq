@@ -23,4 +23,10 @@ public class RedisTest {
         System.out.println(redisTemplate.opsForValue().increment(redisKey));
         System.out.println(redisTemplate.opsForValue().decrement(redisKey));
     }
+    @Test
+    public void testRedis2(){
+        System.out.println(redisTemplate.opsForValue().get("0:10"));
+
+
+    }
 }
