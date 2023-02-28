@@ -1,6 +1,5 @@
 package com.nowcoder.community.controller;
 
-import com.google.code.kaptcha.Producer;
 import com.nowcoder.community.annotation.LoginRquired;
 import com.nowcoder.community.entity.Comment;
 import com.nowcoder.community.entity.DiscussPost;

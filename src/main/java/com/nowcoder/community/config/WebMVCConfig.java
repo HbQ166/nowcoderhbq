@@ -37,4 +37,6 @@ public class WebMVCConfig implements WebMvcConfigurer {
         registry.addInterceptor(dataInterceptor)
                 .excludePathPatterns("/**/*.css","/**/*.js","/**/*.png","/**/*.jpg","/**/*.jpeg");
     }
+
+
 }

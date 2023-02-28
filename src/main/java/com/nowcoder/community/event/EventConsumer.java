@@ -11,7 +11,6 @@ import com.nowcoder.community.service.ElasticsearchService;
 import com.nowcoder.community.service.MessageService;
 import com.nowcoder.community.util.CommunityUtil;
 import com.qiniu.common.QiniuException;
-import com.qiniu.common.Zone;
 import com.qiniu.http.Response;
 import com.qiniu.storage.Configuration;
 import com.qiniu.storage.Region;

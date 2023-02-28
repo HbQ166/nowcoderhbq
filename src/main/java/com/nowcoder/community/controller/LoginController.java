@@ -125,7 +125,7 @@ public class LoginController implements CommunityConstant {
         Map<String,Object> map=userService.login(username,password,expiredSeconds);
         if(map.containsKey("ticket")){
             Cookie cookie=new Cookie("ticket",map.get("ticket").toString());
-            cookie.setPath(contextPath);
+            cookie.setPath("/");
             cookie.setMaxAge(expiredSeconds);
             response.addCookie(cookie);
             return "redirect:/index";
