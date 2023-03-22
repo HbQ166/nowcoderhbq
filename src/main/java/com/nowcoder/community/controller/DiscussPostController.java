@@ -72,6 +72,9 @@ public class DiscussPostController implements CommunityConstant {
     public String getDiscussPost(@PathVariable("discussPostId") int discussPostId, Model model, Page page){
         //帖子
         DiscussPost post=discussPostService.findDiscussPost(discussPostId);
+        if(post.getStatus()==2){
+            throw new RuntimeException("帖子已被删除!");
+        }
         model.addAttribute("post",post);
         //用户
         User user=userService.findById(post.getUserId());

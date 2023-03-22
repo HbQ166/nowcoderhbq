@@ -93,7 +93,7 @@ public class UserController implements CommunityConstant {
     @RequestMapping(path="/setting",method = RequestMethod.GET)
     public String getSettingPage(Model model){
         //上传文件名称
-        String fileName=CommunityUtil.generateUUID();
+        /*String fileName=CommunityUtil.generateUUID();
         //设置响应信息
         StringMap policy=new StringMap();
         policy.put("returnBody",CommunityUtil.getJSONString(0));
@@ -102,7 +102,7 @@ public class UserController implements CommunityConstant {
         String uploadToken=auth.uploadToken(headerBucketName,fileName,3600,policy);
 
         model.addAttribute("uploadToken",uploadToken);
-        model.addAttribute("fileName",fileName);
+        model.addAttribute("fileName",fileName);*/
         return "/site/setting";
     }
 
