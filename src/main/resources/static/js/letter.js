@@ -12,7 +12,7 @@ function send_letter() {
          xhr.setRequestHeader(header,token)
     });
 	var toName=$("#recipient-name").val();
-	var content=$("#message-text").val()
+	var content=$("#message-text").val();
 	$.post(
 	    CONTEXT_PATH+"/letter/send",
 	    {"toName":toName,"content":content},
