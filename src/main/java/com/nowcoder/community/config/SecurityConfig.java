@@ -23,6 +23,7 @@ import java.io.PrintWriter;
 public class SecurityConfig extends WebSecurityConfigurerAdapter implements CommunityConstant {
     @Override
     public void configure(WebSecurity web) throws Exception {
+        //忽略静态资源的访问
         web.ignoring().antMatchers("/resources/**");
     }
 

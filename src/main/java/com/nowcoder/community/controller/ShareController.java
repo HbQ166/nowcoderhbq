@@ -59,13 +59,13 @@ public class ShareController implements CommunityConstant {
 
         eventProducer.fireEvent(event);
         Map<String,Object> map=new HashMap<>();
-        //map.put("图片访问路径：",domain+contextPath+"/share/image/"+fileName);
-        map.put("图片访问路径：",shareBucketUrl+"/"+fileName);
+        map.put("图片访问路径：",domain+contextPath+"/share/image/"+fileName);
+        //map.put("图片访问路径：",shareBucketUrl+"/"+fileName);
 
         return CommunityUtil.getJSONString(0,null,map);
     }
 
-    //废用
+
     @RequestMapping(path="/share/image/{fileName}",method = RequestMethod.GET)
     public void getShareImage(@PathVariable("fileName") String fileName, HttpServletResponse response){
         if(StringUtils.isBlank(fileName)){
