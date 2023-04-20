@@ -28,5 +28,6 @@ public class RedisTest {
         System.out.println(redisTemplate.opsForValue().get("0:10"));
 
 
+
     }
 }

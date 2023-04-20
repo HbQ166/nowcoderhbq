@@ -24,6 +24,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.naming.directory.SearchResult;
 import java.io.IOException;
@@ -34,6 +35,7 @@ import java.util.List;
 @ContextConfiguration(classes=CommunityApplication.class)
 @RunWith(SpringRunner.class)
 public class ElasticsearchTest {
+
     @Autowired
     private DiscussPostMapper discussPostMapper;
 
