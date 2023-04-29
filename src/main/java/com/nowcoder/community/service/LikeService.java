@@ -3,6 +3,10 @@ package com.nowcoder.community.service;
 import com.nowcoder.community.util.RedisKeyUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
@@ -31,6 +35,27 @@ public class LikeService {
                     operations.opsForValue().increment(userLikeKey);
                 }
                 return operations.exec();
+            }
+        });
+
+    }
+    //pipeline
+    public void likePipeline(int userId,int entityType,int entityId,int entityUserId){
+        String entityLikeKey=RedisKeyUtil.getEntityLikeKey(entityType,entityId);
+        String userLikeKey=RedisKeyUtil.getUserLikeKey(entityUserId);
+        boolean isMember=redisTemplate.opsForSet().isMember(entityLikeKey,userId);
+        redisTemplate.executePipelined(new RedisCallback<String>() {
+            @Override
+            public String doInRedis(RedisConnection connection) throws DataAccessException {
+
+                if(isMember){
+                    connection.sRem(entityLikeKey.getBytes(),String.valueOf(userId).getBytes());
+                    connection.decr(userLikeKey.getBytes());
+                }else{
+                    connection.sAdd(entityLikeKey.getBytes(),String.valueOf(userId).getBytes());
+                    connection.incr(userLikeKey.getBytes());
+                }
+                return null;
             }
         });
     }

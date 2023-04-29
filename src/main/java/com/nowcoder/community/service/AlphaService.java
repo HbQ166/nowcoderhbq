@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-@Service
+//@Service
 //@Scope("prototype")
 public class AlphaService {
     public AlphaService(){

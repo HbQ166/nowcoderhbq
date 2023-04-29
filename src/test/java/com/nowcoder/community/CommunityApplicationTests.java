@@ -1,6 +1,7 @@
 package com.nowcoder.community;
 
 import com.nowcoder.community.dao.AlphaDao;
+import com.nowcoder.community.entity.User;
 import com.nowcoder.community.service.AlphaService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -20,7 +21,7 @@ import java.util.Date;
 @SpringBootTest
 @ContextConfiguration(classes=CommunityApplication.class)
 @RunWith(SpringRunner.class)
-class CommunityApplicationTests implements ApplicationContextAware {
+public class CommunityApplicationTests implements ApplicationContextAware {
 	private ApplicationContext applicationContext;
 
 	@Test
@@ -54,7 +55,7 @@ class CommunityApplicationTests implements ApplicationContextAware {
 	private AlphaDao alphaDao;
 	@Test
 	public void testDI(){
-		System.out.println(alphaDao);
+		System.out.println(User.class.getClassLoader());
 	}
 
 }

@@ -4,6 +4,8 @@ import com.nowcoder.community.entity.User;
 import com.nowcoder.community.util.RedisKeyUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
@@ -19,7 +21,22 @@ public class FollowService implements CommunityConstant{
     private UserService userService;
 
     public void follow(int userId,int entityType,int entityId){
-        redisTemplate.execute(new SessionCallback() {
+        //pipeline,事务方法弃用
+        redisTemplate.executePipelined(new RedisCallback<String>() {
+            String followeeKey= RedisKeyUtil.getFolloweeKey(userId,entityType);
+            String followerKey=RedisKeyUtil.getFollowerKey(entityType,entityId);
+            @Override
+            public String doInRedis(RedisConnection connection) throws DataAccessException {
+                connection.zSetCommands().zAdd(followeeKey.getBytes(),
+                        System.currentTimeMillis(),String.valueOf(entityId).getBytes());
+                connection.zSetCommands().zAdd(followerKey.getBytes(),
+                        System.currentTimeMillis(),String.valueOf(userId).getBytes());
+
+
+                return null;
+            }
+        });
+        /*redisTemplate.execute(new SessionCallback() {
             @Override
             public Object execute(RedisOperations operations) throws DataAccessException {
                 String followeeKey= RedisKeyUtil.getFolloweeKey(userId,entityType);
@@ -30,11 +47,23 @@ public class FollowService implements CommunityConstant{
 
                 return operations.exec();
             }
-        });
+        });*/
 
     }
     public void unFollow(int userId,int entityType,int entityId){
-        redisTemplate.execute(new SessionCallback() {
+        redisTemplate.executePipelined(new RedisCallback<String>() {
+            String followeeKey= RedisKeyUtil.getFolloweeKey(userId,entityType);
+            String followerKey=RedisKeyUtil.getFollowerKey(entityType,entityId);
+            @Override
+            public String doInRedis(RedisConnection connection) throws DataAccessException {
+                connection.zSetCommands().zRem(followeeKey.getBytes(),String.valueOf(entityId).getBytes());
+                connection.zSetCommands().zRem(followerKey.getBytes(),String.valueOf(userId).getBytes());
+
+
+                return null;
+            }
+        });
+        /*redisTemplate.execute(new SessionCallback() {
             @Override
             public Object execute(RedisOperations operations) throws DataAccessException {
                 String followeeKey= RedisKeyUtil.getFolloweeKey(userId,entityType);
@@ -45,7 +74,7 @@ public class FollowService implements CommunityConstant{
 
                 return operations.exec();
             }
-        });
+        });*/
 
     }
     //查询实体粉丝数量
