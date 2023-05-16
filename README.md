@@ -1,10 +1,12 @@
 # 社区论坛系统
-项目描述:基于SpringBoot开发的具备基本功能的社区论坛系统开发项目。主要功能包括：基于邮件激活的注册方式，加入随
+## 项目描述:
+  基于SpringBoot开发的具备基本功能的社区论坛系统开发项目。主要功能包括：基于邮件激活的注册方式，加入随
 机验证码的登录验证，实现登录状态检查，根据权限控制展现不同的界面和功能，以及发帖，点赞，关注，私信，系统通知，
 帖子按热度排序，搜索，访问量统计等功能。  
-技术栈：SpringBoot，SSM（Spring，SpringMVC，
+## 技术栈：
+SpringBoot，SSM（Spring，SpringMVC，
 MyBaits）,Thymeleaf,Git,Redis,Kafka,Elasticsearch,SpringSecurity,Quartz,wkhtmltopdf，Caffeine。  
-主要工作：  
+## 主要工作：  
 在Spring Boot+SSM框架之上构建项目，并通过AOP与拦截器实现统一的进行了日志记录、事务管理、异常处理，使用
 Git进行版本控制。  
 对于访问频率较高的点赞和关注功能,以及登录凭证信息，利用Redis存储相关数据，单机可达5000TPS，并利用Kafka实现
